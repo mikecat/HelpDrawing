@@ -14,7 +14,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private boolean requestingPermission = false;
 
     private TextureView cameraTextureView;
-    private LinearLayout mainLayout;
+    private RelativeLayout mainLayout;
     private int layoutPrevX = -1, layoutPrevY = -1;
 
     private void openCamera() {
@@ -140,7 +140,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         setContentView(R.layout.activity_main);
 
         cameraTextureView = (TextureView)findViewById(R.id.cameraTextureView);
-        mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+        mainLayout = (RelativeLayout) findViewById(R.id.mainLayout);
 
         cameraTextureView.setSurfaceTextureListener(this);
         cameraTextureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
