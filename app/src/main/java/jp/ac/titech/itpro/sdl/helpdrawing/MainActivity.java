@@ -10,6 +10,7 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
@@ -219,7 +220,9 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         if (currentX != layoutPrevX || currentY != layoutPrevY || currentRotation != prevRotation) {
             if (figureX == null) {
                 if (figureRadius < 0) {
-                    figureRadius = currentX / 30;
+                    DisplayMetrics displayMetrics = new DisplayMetrics();
+                    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                    figureRadius = (int)(1.5 / 25.4 * displayMetrics.densityDpi);
                     mainFigureView.setRadius(figureRadius);
                 }
                 figureX = new int[4];
