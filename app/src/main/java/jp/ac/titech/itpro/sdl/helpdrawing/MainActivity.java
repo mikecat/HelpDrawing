@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
@@ -11,9 +12,11 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.view.Surface;
 import android.view.TextureView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.List;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
@@ -87,6 +90,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     }
 
     private void setCameraOrientation() {
+        if (camera == null) return;
         // 画面の向きとカメラの向きを合わせる
         int rotationDegrees = 0;
         switch (getWindowManager().getDefaultDisplay().getRotation()) {
@@ -95,7 +99,27 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             case Surface.ROTATION_180: rotationDegrees = 180; break;
             case Surface.ROTATION_270: rotationDegrees = 270; break;
         }
-        camera.setDisplayOrientation((cameraInfo.orientation - rotationDegrees + 360) % 360);
+        int cameraRotation = (cameraInfo.orientation - rotationDegrees + 360) % 360;
+        camera.setDisplayOrientation(cameraRotation);
+        // 画面の大きさを適切にセットする
+        boolean isRotate = (cameraRotation == 90 || cameraRotation == 270);
+        Camera.Size previewSize = camera.getParameters().getPreviewSize();
+        int width = isRotate ? previewSize.height : previewSize.width;
+        int height = isRotate ? previewSize.width : previewSize.height;
+        LinearLayout mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+        int viewWidth = mainLayout.getWidth();
+        int viewHeight = mainLayout.getHeight();
+        // カメラの縦が画面の縦より大きい場合
+        // height / width >= viewHeight / viewWidth
+        if ((long)height * viewWidth >= (long)viewHeight * width) {
+            float newHeight = (float)viewWidth * height / width;
+            cameraTextureView.setScaleX(1.0f);
+            cameraTextureView.setScaleY(newHeight / viewHeight);
+        } else {
+            float newWidth = (float)viewHeight * width / height;
+            cameraTextureView.setScaleX(newWidth / viewWidth);
+            cameraTextureView.setScaleY(1.0f);
+        }
     }
 
     private void startFocus() {
@@ -134,11 +158,17 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        setCameraOrientation();
+    }
+    @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         cameraTexture = surface;
         try {
             if (camera != null) {
                 camera.setPreviewTexture(surface);
+                setCameraOrientation();
                 startFocus();
             }
         } catch (IOException e) {
@@ -149,7 +179,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
+        setCameraOrientation();
     }
 
     @Override
