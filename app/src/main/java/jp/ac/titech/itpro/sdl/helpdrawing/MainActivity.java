@@ -50,6 +50,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         }
         setCameraOrientation();
         camera.startPreview();
+        if (cameraTexture != null) startFocus();
     }
 
     private void closeCamera() {
@@ -70,6 +71,14 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             case Surface.ROTATION_270: rotationDegrees = 270; break;
         }
         camera.setDisplayOrientation((cameraInfo.orientation - rotationDegrees + 360) % 360);
+    }
+
+    private void startFocus() {
+        camera.autoFocus(new Camera.AutoFocusCallback() {
+            @Override
+            public void onAutoFocus(boolean success, Camera camera) {
+            }
+        });
     }
 
     @Override
@@ -103,7 +112,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         cameraTexture = surface;
         try {
-            if (camera != null) camera.setPreviewTexture(surface);
+            if (camera != null) {
+                camera.setPreviewTexture(surface);
+                startFocus();
+            }
         } catch (IOException e) {
             Toast.makeText(getApplicationContext(), R.string.camera_initialize_fail, Toast.LENGTH_SHORT).show();
             finish();
