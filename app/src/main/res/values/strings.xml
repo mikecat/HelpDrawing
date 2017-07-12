@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Help drawing</string>
+    <string name="camera_open_fail">Failed to open camera.</string>
 </resources>
