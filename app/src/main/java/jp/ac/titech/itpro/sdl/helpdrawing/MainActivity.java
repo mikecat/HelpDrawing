@@ -3,6 +3,7 @@ package jp.ac.titech.itpro.sdl.helpdrawing;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -33,6 +34,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private RelativeLayout mainLayout;
     private FigureView mainFigureView;
     private int layoutPrevX = -1, layoutPrevY = -1;
+    private int prevRotation = 0;
 
     private boolean isDragging = false;
     private float prevDragX = -1, prevDragY = -1;
@@ -102,9 +104,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         }
     }
 
-    private void setCameraOrientation() {
-        if (camera == null) return;
-        // 画面の向きとカメラの向きを合わせる
+    private int getRotationDegrees() {
         int rotationDegrees = 0;
         switch (getWindowManager().getDefaultDisplay().getRotation()) {
             case Surface.ROTATION_0: rotationDegrees = 0; break;
@@ -112,6 +112,13 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             case Surface.ROTATION_180: rotationDegrees = 180; break;
             case Surface.ROTATION_270: rotationDegrees = 270; break;
         }
+        return rotationDegrees;
+    }
+
+    private void setCameraOrientation() {
+        if (camera == null) return;
+        // 画面の向きとカメラの向きを合わせる
+        int rotationDegrees = getRotationDegrees();
         int cameraRotation = (cameraInfo.orientation - rotationDegrees + 360) % 360;
         camera.setDisplayOrientation(cameraRotation);
         // 画面の大きさを適切にセットする
@@ -154,6 +161,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         cameraTextureView.setSurfaceTextureListener(this);
         cameraTextureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
 
+        prevRotation = getRotationDegrees();
     }
 
     @Override
@@ -207,10 +215,8 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     public void onGlobalLayout() {
         int currentX = mainLayout.getWidth();
         int currentY = mainLayout.getHeight();
-        if (currentX != layoutPrevX || currentY != layoutPrevY) {
-            layoutPrevX = currentX;
-            layoutPrevY = currentY;
-            setCameraOrientation();
+        int currentRotation = getRotationDegrees();
+        if (currentX != layoutPrevX || currentY != layoutPrevY || currentRotation != prevRotation) {
             if (figureX == null) {
                 if (figureRadius < 0) {
                     figureRadius = currentX / 30;
@@ -219,12 +225,42 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                 figureX = new int[4];
                 figureY = new int[4];
                 for (int i = 0; i < 4; i++) {
-                    figureX[i] = (int)((long)currentX * (i + 1) / 5);
-                    figureY[i] = (int)((long)currentY * (i + 1) / 5);
+                    figureX[i] = (int) ((long) currentX * (i + 1) / 5);
+                    figureY[i] = (int) ((long) currentY * (i + 1) / 5);
                     mainFigureView.setCoord(figureX[i], figureY[i], i);
                 }
                 mainFigureView.invalidate();
+            } else if (currentRotation != prevRotation) {
+                int diff = (currentRotation - prevRotation + 360) % 360;
+                isDragging = false;
+                android.util.Log.d("touchaaaa", "diff = " + diff);
+                if (diff == 180) {
+                    for (int i = 0; i < 4; i++) {
+                        figureX[i] = currentX - figureX[i];
+                        figureY[i] = currentY - figureY[i];
+                    }
+                } else if (diff == 90) {
+                    for (int i = 0; i < 4; i++) {
+                        int xBackup = figureX[i];
+                        figureX[i] = figureY[i];
+                        figureY[i] = currentY - xBackup;
+                    }
+                } else if (diff == 270) {
+                    for (int i = 0; i < 4; i++) {
+                        int xBackup = figureX[i];
+                        figureX[i] = layoutPrevY - figureY[i];
+                        figureY[i] = xBackup;
+                    }
+                }
+                for (int i = 0; i < 4; i++) {
+                    mainFigureView.setCoord(figureX[i], figureY[i], i);
+                }
+                mainFigureView.invalidate();
+                prevRotation = currentRotation;
             }
+            layoutPrevX = currentX;
+            layoutPrevY = currentY;
+            setCameraOrientation();
         }
     }
 
