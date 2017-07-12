@@ -4,15 +4,51 @@ import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Toast;
 
 import java.io.IOException;
 
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
+    private int cameraId = -1;
+    private Camera.CameraInfo cameraInfo;
     private Camera camera;
     private TextureView cameraTextureView;
     private boolean cameraOk = false;
+
+    Camera openCamera() {
+        // カメラが選択されていない場合、選択する
+        if (cameraId < 0) {
+            int cameraMax = Camera.getNumberOfCameras();
+            cameraInfo = new Camera.CameraInfo();
+            for (int i = 0; i < cameraMax; i++) {
+                Camera.getCameraInfo(i, cameraInfo);
+                if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                    // backを向いている最初のカメラ
+                    cameraId = i;
+                    break;
+                }
+            }
+            if (cameraId < 0) {
+                // 有効なカメラが見つからない
+                Toast.makeText(getApplicationContext(), R.string.camera_not_found, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+        // カメラを開く
+        Camera camera = Camera.open(cameraId);
+        // 画面の向きとカメラの向きを合わせる
+        int rotationDegrees = 0;
+        switch (getWindowManager().getDefaultDisplay().getRotation()) {
+            case Surface.ROTATION_0: rotationDegrees = 0; break;
+            case Surface.ROTATION_90: rotationDegrees = 90; break;
+            case Surface.ROTATION_180: rotationDegrees = 180; break;
+            case Surface.ROTATION_270: rotationDegrees = 270; break;
+        }
+        camera.setDisplayOrientation((cameraInfo.orientation - rotationDegrees + 360) % 360);
+        return camera;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,8 +57,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
         cameraTextureView = (TextureView)findViewById(R.id.cameraTextureView);
         cameraTextureView.setSurfaceTextureListener(this);
-        camera = Camera.open();
-        camera.setDisplayOrientation(90);
+        camera = openCamera();
     }
 
     @Override
