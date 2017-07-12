@@ -14,12 +14,12 @@ import java.io.IOException;
 @SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
     private int cameraId = -1;
-    private Camera.CameraInfo cameraInfo;
-    private Camera camera;
+    private Camera.CameraInfo cameraInfo = null;
+    private Camera camera = null;
     private TextureView cameraTextureView;
-    private boolean cameraOk = false;
+    private SurfaceTexture cameraTexture = null;
 
-    Camera openCamera() {
+    private void openCamera() {
         // カメラが選択されていない場合、選択する
         if (cameraId < 0) {
             int cameraMax = Camera.getNumberOfCameras();
@@ -39,13 +39,28 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             }
         }
         // カメラを開く
-        Camera camera = Camera.open(cameraId);
-        // 画面の向きとカメラの向きを合わせる
-        setCameraOrientation(camera);
-        return camera;
+        camera = Camera.open(cameraId);
+        if (cameraTexture != null) {
+            try {
+                camera.setPreviewTexture(cameraTexture);
+            } catch (IOException e) {
+                Toast.makeText(getApplicationContext(), R.string.camera_initialize_fail, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+        setCameraOrientation();
+        camera.startPreview();
     }
 
-    void setCameraOrientation(Camera camera) {
+    private void closeCamera() {
+        if (camera != null) {
+            camera.stopPreview();
+            camera.release();
+            camera = null;
+        }
+    }
+
+    private void setCameraOrientation() {
         // 画面の向きとカメラの向きを合わせる
         int rotationDegrees = 0;
         switch (getWindowManager().getDefaultDisplay().getRotation()) {
@@ -64,35 +79,33 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
         cameraTextureView = (TextureView)findViewById(R.id.cameraTextureView);
         cameraTextureView.setSurfaceTextureListener(this);
-        camera = openCamera();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (cameraOk) camera.startPreview();
+        openCamera();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (cameraOk) camera.stopPreview();
+        closeCamera();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        setCameraOrientation(camera);
+        setCameraOrientation();
     }
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        cameraTexture = surface;
         try {
-            camera.setPreviewTexture(surface);
-            camera.startPreview();
-            cameraOk = true;
+            if (camera != null) camera.setPreviewTexture(surface);
         } catch (IOException e) {
-            Toast.makeText(getApplicationContext(), R.string.camera_open_fail, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.camera_initialize_fail, Toast.LENGTH_SHORT).show();
             finish();
         }
     }
@@ -104,9 +117,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        camera.stopPreview();
-        camera.release();
-        cameraOk = false;
+        closeCamera();
         return true;
     }
 

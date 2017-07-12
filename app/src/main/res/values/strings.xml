@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Help drawing</string>
     <string name="camera_not_found">Back camera not found.</string>
-    <string name="camera_open_fail">Failed to open camera.</string>
+    <string name="camera_initialize_fail">Failed to initialize camera.</string>
 </resources>
