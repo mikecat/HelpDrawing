@@ -1,10 +1,14 @@
 package jp.ac.titech.itpro.sdl.helpdrawing;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.Toast;
@@ -13,13 +17,30 @@ import java.io.IOException;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
+    private static final int PERMISSION_REQUEST = 12345;
+
     private int cameraId = -1;
     private Camera.CameraInfo cameraInfo = null;
     private Camera camera = null;
     private TextureView cameraTextureView;
     private SurfaceTexture cameraTexture = null;
+    private boolean requestingPermission = false;
 
     private void openCamera() {
+        // 権限が必要で、かつ無い場合要求する
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (getApplicationContext().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                if (requestingPermission) {
+                    Toast.makeText(getApplicationContext(), R.string.camera_no_permission, Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    requestingPermission = true;
+                    requestPermissions(new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST);
+                }
+                return;
+            }
+        }
+        requestingPermission = false;
         // カメラが選択されていない場合、選択する
         if (cameraId < 0) {
             int cameraMax = Camera.getNumberOfCameras();
@@ -51,6 +72,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         setCameraOrientation();
         camera.startPreview();
         if (cameraTexture != null) startFocus();
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST) openCamera();
     }
 
     private void closeCamera() {
