@@ -1,6 +1,7 @@
 package jp.ac.titech.itpro.sdl.helpdrawing;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -40,6 +41,12 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         // カメラを開く
         Camera camera = Camera.open(cameraId);
         // 画面の向きとカメラの向きを合わせる
+        setCameraOrientation(camera);
+        return camera;
+    }
+
+    void setCameraOrientation(Camera camera) {
+        // 画面の向きとカメラの向きを合わせる
         int rotationDegrees = 0;
         switch (getWindowManager().getDefaultDisplay().getRotation()) {
             case Surface.ROTATION_0: rotationDegrees = 0; break;
@@ -48,7 +55,6 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             case Surface.ROTATION_270: rotationDegrees = 270; break;
         }
         camera.setDisplayOrientation((cameraInfo.orientation - rotationDegrees + 360) % 360);
-        return camera;
     }
 
     @Override
@@ -71,6 +77,12 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     protected void onPause() {
         super.onPause();
         if (cameraOk) camera.stopPreview();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        setCameraOrientation(camera);
     }
 
     @Override
