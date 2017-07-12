@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 
+@SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
     private int cameraId = -1;
     private Camera.CameraInfo cameraInfo;
