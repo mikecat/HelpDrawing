@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -19,15 +21,18 @@ import java.io.IOException;
 import java.util.List;
 
 @SuppressWarnings("deprecation")
-public class MainActivity extends Activity implements TextureView.SurfaceTextureListener {
+public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, ViewTreeObserver.OnGlobalLayoutListener {
     private static final int PERMISSION_REQUEST = 12345;
 
     private int cameraId = -1;
     private Camera.CameraInfo cameraInfo = null;
     private Camera camera = null;
-    private TextureView cameraTextureView;
     private SurfaceTexture cameraTexture = null;
     private boolean requestingPermission = false;
+
+    private TextureView cameraTextureView;
+    private LinearLayout mainLayout;
+    private int layoutPrevX = -1, layoutPrevY = -1;
 
     private void openCamera() {
         // 権限が必要で、かつ無い場合要求する
@@ -106,20 +111,19 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         Camera.Size previewSize = camera.getParameters().getPreviewSize();
         int width = isRotate ? previewSize.height : previewSize.width;
         int height = isRotate ? previewSize.width : previewSize.height;
-        LinearLayout mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
         int viewWidth = mainLayout.getWidth();
         int viewHeight = mainLayout.getHeight();
+        ViewGroup.LayoutParams lp = cameraTextureView.getLayoutParams();
         // カメラの縦が画面の縦より大きい場合
         // height / width >= viewHeight / viewWidth
         if ((long)height * viewWidth >= (long)viewHeight * width) {
-            float newHeight = (float)viewWidth * height / width;
-            cameraTextureView.setScaleX(1.0f);
-            cameraTextureView.setScaleY(newHeight / viewHeight);
+            lp.width = viewWidth;
+            lp.height = (int)((long)viewWidth * height / width);
         } else {
-            float newWidth = (float)viewHeight * width / height;
-            cameraTextureView.setScaleX(newWidth / viewWidth);
-            cameraTextureView.setScaleY(1.0f);
+            lp.width = (int)((long)viewHeight * width / height);
+            lp.height = viewHeight;
         }
+        cameraTextureView.requestLayout();
     }
 
     private void startFocus() {
@@ -136,7 +140,10 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         setContentView(R.layout.activity_main);
 
         cameraTextureView = (TextureView)findViewById(R.id.cameraTextureView);
+        mainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+
         cameraTextureView.setSurfaceTextureListener(this);
+        cameraTextureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
     }
 
     @Override
@@ -152,16 +159,16 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        setCameraOrientation();
+    public void onGlobalLayout() {
+        int currentX = mainLayout.getWidth();
+        int currentY = mainLayout.getHeight();
+        if (currentX != layoutPrevX || currentY != layoutPrevY) {
+            layoutPrevX = currentX;
+            layoutPrevY = currentY;
+            setCameraOrientation();
+        }
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        setCameraOrientation();
-    }
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
         cameraTexture = surface;
@@ -179,7 +186,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        setCameraOrientation();
+
     }
 
     @Override
@@ -192,4 +199,5 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
     }
+
 }
