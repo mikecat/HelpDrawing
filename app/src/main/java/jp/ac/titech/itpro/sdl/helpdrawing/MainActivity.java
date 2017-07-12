@@ -194,6 +194,9 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                     break;
                 }
             }
+            if (!isDragging) {
+                startFocus();
+            }
         } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
             if (isDragging) {
                 figureX[dragTarget] += (int)(x - prevDragX);
@@ -236,7 +239,6 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             } else if (currentRotation != prevRotation) {
                 int diff = (currentRotation - prevRotation + 360) % 360;
                 isDragging = false;
-                android.util.Log.d("touchaaaa", "diff = " + diff);
                 if (diff == 180) {
                     for (int i = 0; i < 4; i++) {
                         figureX[i] = currentX - figureX[i];
@@ -259,8 +261,8 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                     mainFigureView.setCoord(figureX[i], figureY[i], i);
                 }
                 mainFigureView.invalidate();
-                prevRotation = currentRotation;
             }
+            prevRotation = currentRotation;
             layoutPrevX = currentX;
             layoutPrevY = currentY;
             setCameraOrientation();
