@@ -3,11 +3,13 @@ package jp.ac.titech.itpro.sdl.helpdrawing;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.ViewGroup;
@@ -29,7 +31,16 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
     private TextureView cameraTextureView;
     private RelativeLayout mainLayout;
+    private FigureView mainFigureView;
     private int layoutPrevX = -1, layoutPrevY = -1;
+
+    private boolean isDragging = false;
+    private float prevDragX = -1, prevDragY = -1;
+    private int dragTarget = -1;
+
+    private int[] figureX = null;
+    private int[] figureY = null;
+    private int figureRadius = -1;
 
     private void openCamera() {
         // 権限が必要で、かつ無い場合要求する
@@ -138,9 +149,11 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
         cameraTextureView = (TextureView)findViewById(R.id.cameraTextureView);
         mainLayout = (RelativeLayout) findViewById(R.id.mainLayout);
+        mainFigureView = (FigureView)findViewById(R.id.mainFigureView);
 
         cameraTextureView.setSurfaceTextureListener(this);
         cameraTextureView.getViewTreeObserver().addOnGlobalLayoutListener(this);
+
     }
 
     @Override
@@ -156,6 +169,41 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        Rect rect = new Rect();
+        getWindow().getDecorView().getWindowVisibleDisplayFrame(rect);
+        int action = event.getAction();
+        float x = event.getX() - rect.left;
+        float y = event.getY() - rect.top;
+        if (action == MotionEvent.ACTION_DOWN) {
+            for (int i = 0; i < 4; i++) {
+                if ((figureX[i] - x) * (figureX[i] - x) + (figureY[i] - y) * (figureY[i] - y) <= figureRadius * figureRadius) {
+                    isDragging = true;
+                    dragTarget = i;
+                    prevDragX = x;
+                    prevDragY = y;
+                    break;
+                }
+            }
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
+            if (isDragging) {
+                figureX[dragTarget] += (int)(x - prevDragX);
+                figureY[dragTarget] += (int)(y - prevDragY);
+                mainFigureView.setCoord(figureX[dragTarget], figureY[dragTarget], dragTarget);
+                mainFigureView.invalidate();
+            }
+            isDragging = false;
+        } else if (action == MotionEvent.ACTION_MOVE) {
+            if (isDragging) {
+                mainFigureView.setCoord(figureX[dragTarget] + (int) (x - prevDragX),
+                        figureY[dragTarget] + (int) (y - prevDragY), dragTarget);
+                mainFigureView.invalidate();
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void onGlobalLayout() {
         int currentX = mainLayout.getWidth();
         int currentY = mainLayout.getHeight();
@@ -163,6 +211,20 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
             layoutPrevX = currentX;
             layoutPrevY = currentY;
             setCameraOrientation();
+            if (figureX == null) {
+                if (figureRadius < 0) {
+                    figureRadius = currentX / 30;
+                    mainFigureView.setRadius(figureRadius);
+                }
+                figureX = new int[4];
+                figureY = new int[4];
+                for (int i = 0; i < 4; i++) {
+                    figureX[i] = (int)((long)currentX * (i + 1) / 5);
+                    figureY[i] = (int)((long)currentY * (i + 1) / 5);
+                    mainFigureView.setCoord(figureX[i], figureY[i], i);
+                }
+                mainFigureView.invalidate();
+            }
         }
     }
 
