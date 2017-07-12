@@ -3,8 +3,6 @@ package jp.ac.titech.itpro.sdl.helpdrawing;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Build;
@@ -18,7 +16,6 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.List;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, ViewTreeObserver.OnGlobalLayoutListener {
