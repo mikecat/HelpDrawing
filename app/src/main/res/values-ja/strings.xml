@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">曲線描画補助ツール</string>
+    <string name="camera_not_found">後ろにカメラが見つかりません。</string>
+    <string name="camera_initialize_fail">カメラの初期化に失敗しました。</string>
+    <string name="camera_no_permission">カメラを使用する許可が必要です。</string>
+</resources>
